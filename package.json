@@ -1,0 +1,15 @@
+{
+  "name": "@sp/sdk",
+  "version": "0.1.0",
+  "description": "Bull Bitcoin API TypeScript SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "ArthyFiciel <arthyficiel@gmail.com>",
+  "license": "MIT",
+  "files": [
+    "/dist"
+  ],
+  "devDependencies": {
+    "typescript": "^5.4.2"
+  }
+}

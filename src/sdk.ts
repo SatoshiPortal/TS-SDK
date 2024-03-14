@@ -4,21 +4,20 @@ import packageInfo from '../package.json';
 export enum BullApiStatusEnum {
   Operational = 'OPERATIONAL',
   Maintenance = 'MAINTENANCE',
-  // Outdated = 'OUTDATED',
   Down = 'DOWN',
 }
 
 export type BullSdkDetailsType = {
   message: string,
-  version: string,
-  currentVersion: string,
-  lastUpdate: string, // Format: YYYY-MM-DD
+  currentSdkVersion: string,
+  lastSdkVersion: string,
+  lastSdkUpdate: Date,
   documentationUrl: string,
   supportEmail: string,
   status: BullApiStatusEnum,
 }
 
-const getLastUpdate = async (packageName: string): Promise<Pick<BullSdkDetailsType, 'lastUpdate' | 'version'>> => {
+export const getLastPackageVersion = async (packageName: string): Promise<{ lastVersion: string, lastUpdate: Date }> => {
   const url = `https://registry.npmjs.org/${packageName}`;
   const response = await fetch(url);
   if (!response.ok) {
@@ -26,16 +25,17 @@ const getLastUpdate = async (packageName: string): Promise<Pick<BullSdkDetailsTy
   }
   const data = await response.json();
   const versions = Object.keys(data.time);
-  const version = versions[versions.length - 1];
+  const lastVersion = versions[versions.length - 1];
+
   return {
-    version,
-    lastUpdate: data.time[version]
+    lastVersion,
+    lastUpdate: data.time[lastVersion]
   }
 }
 
 const fetchApiStatus = async (): Promise<BullApiStatusEnum> => {
 
-  const url = 'bullbitcoin.com';
+  const url = 'api.bullbitcoin.com';
 
   try {
     const response = await fetch(url);
@@ -50,10 +50,13 @@ const fetchApiStatus = async (): Promise<BullApiStatusEnum> => {
 }
 
 export const getSdkDetails = async (): Promise<BullSdkDetailsType> => {
+  const { lastVersion: lastSdkVersion, lastUpdate: lastSdkUpdate } = await getLastPackageVersion('@bullbitcoin/sdk')
+
   return {
-    message: "Welcome on Bull Bitcoin TypeScript SDK",
-    ...(await getLastUpdate('@bullbitcoin/sdk')),
-    currentVersion: packageInfo.version,
+    message: packageInfo.description,
+    lastSdkVersion,
+    lastSdkUpdate,
+    currentSdkVersion: packageInfo.version,
     documentationUrl: 'https://github.com/SatoshiPortal/TS-SDK/',
     supportEmail: 'support@bullbitcoin.com',
     status: await fetchApiStatus(),

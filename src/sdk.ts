@@ -24,8 +24,11 @@ export const getLastPackageVersion = async (packageName: string): Promise<{ last
     throw new Error(`HTTP error! status: ${response.status}`);
   }
   const data = await response.json();
-  const versions = Object.keys(data.time);
-  const lastVersion = versions[versions.length - 1];
+  // const versions = Object.keys(data.time);
+  // const lastVersion = versions[versions.length - 1];
+
+  const lastVersion = data['dist-tags'];
+  const lastUpdate = data.time[lastVersion];
 
   return {
     lastVersion,

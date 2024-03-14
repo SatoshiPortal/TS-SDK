@@ -7,6 +7,10 @@
   "types": "dist/index.d.ts",
   "author": "ArthyFiciel <arthyficiel@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "clean": "rm -rf dist/*",
+    "build": "yarn clean && tsc"
+  },
   "files": [
     "/dist"
   ],

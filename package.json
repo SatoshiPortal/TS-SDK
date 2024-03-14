@@ -1,6 +1,6 @@
 {
   "name": "@bullbitcoin/sdk",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": false,
   "description": "Bull Bitcoin API TypeScript SDK",
   "main": "dist/index.js",

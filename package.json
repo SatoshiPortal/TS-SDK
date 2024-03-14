@@ -1,6 +1,7 @@
 {
-  "name": "@sp/sdk",
+  "name": "@bullbitcoin/sdk",
   "version": "0.1.0",
+  "private": false,
   "description": "Bull Bitcoin API TypeScript SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,6 +10,10 @@
   "files": [
     "/dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SatoshiPortal/TS-SDK.git"
+  },
   "devDependencies": {
     "typescript": "^5.4.2"
   }

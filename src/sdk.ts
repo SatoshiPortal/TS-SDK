@@ -1,5 +1,5 @@
 
-import packageInfo from '../package.json';
+// import packageInfo from '../package.json';
 
 export enum BullApiStatusEnum {
   Operational = 'OPERATIONAL',
@@ -9,7 +9,6 @@ export enum BullApiStatusEnum {
 
 export type BullSdkDetailsType = {
   message: string,
-  currentSdkVersion: string,
   lastSdkVersion: string,
   lastSdkUpdate: Date,
   documentationUrl: string,
@@ -27,7 +26,7 @@ export const getLastPackageVersion = async (packageName: string): Promise<{ last
   // const versions = Object.keys(data.time);
   // const lastVersion = versions[versions.length - 1];
 
-  const lastVersion = data['dist-tags'];
+  const lastVersion = data['dist-tags'].lastest;
   const lastUpdate = data.time[lastVersion];
 
   return {
@@ -56,12 +55,13 @@ export const getSdkDetails = async (): Promise<BullSdkDetailsType> => {
   const { lastVersion: lastSdkVersion, lastUpdate: lastSdkUpdate } = await getLastPackageVersion('@bullbitcoin/sdk')
 
   return {
-    message: packageInfo.description,
+    message: "123", // packageInfo.description,
     lastSdkVersion,
     lastSdkUpdate,
-    currentSdkVersion: packageInfo.version,
+    // currentSdkVersion: "1.2.3", // packageInfo.version,
     documentationUrl: 'https://github.com/SatoshiPortal/TS-SDK/',
     supportEmail: 'support@bullbitcoin.com',
     status: await fetchApiStatus(),
+    // foo: "Bar",
   }
 }

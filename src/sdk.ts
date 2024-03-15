@@ -26,7 +26,7 @@ export const getLastPackageVersion = async (packageName: string): Promise<{ last
   // const versions = Object.keys(data.time);
   // const lastVersion = versions[versions.length - 1];
 
-  const lastVersion = data['dist-tags'].lastest;
+  const lastVersion = data['dist-tags'].latest;
   const lastUpdate = data.time[lastVersion];
 
   return {

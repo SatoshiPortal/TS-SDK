@@ -1,5 +1,10 @@
 
-// import packageInfo from '../package.json';
+//
+// TS SDK Details
+// ==============
+//
+// Get informations about the SDK and the Bull Bitcoin API
+//
 
 export enum BullApiStatusEnum {
   Operational = 'OPERATIONAL',
@@ -55,13 +60,11 @@ export const getSdkDetails = async (): Promise<BullSdkDetailsType> => {
   const { lastVersion: lastSdkVersion, lastUpdate: lastSdkUpdate } = await getLastPackageVersion('@bullbitcoin/sdk')
 
   return {
-    message: "123", // packageInfo.description,
+    message: "Bull Bitcoin API TypeScript SDK",
     lastSdkVersion,
     lastSdkUpdate,
-    // currentSdkVersion: "1.2.3", // packageInfo.version,
     documentationUrl: 'https://github.com/SatoshiPortal/TS-SDK/',
     supportEmail: 'support@bullbitcoin.com',
     status: await fetchApiStatus(),
-    // foo: "Bar",
   }
 }

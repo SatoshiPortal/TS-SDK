@@ -19,6 +19,7 @@
     "url": "https://github.com/SatoshiPortal/TS-SDK.git"
   },
   "devDependencies": {
+    "@types/node": "^20.11.28",
     "typescript": "^5.4.2"
   }
 }

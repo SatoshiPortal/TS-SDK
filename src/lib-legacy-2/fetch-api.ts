@@ -1,6 +1,6 @@
 
 
-import { GeneralObject } from "../types";
+import { DeepPartial, GeneralObject } from "../types";
 // import { cookiesToString } from "./utils";
 
 //

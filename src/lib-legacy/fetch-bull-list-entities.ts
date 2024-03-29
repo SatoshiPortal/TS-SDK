@@ -1,5 +1,4 @@
 
-
 //
 // Bull Bitcoin API Fetch Entity List
 // ==================================
@@ -41,15 +40,15 @@ export type ElementListOf<EntityType = any> = {
 export type FetchBullListEntitiesEndpointType<
   EntityType = any,
   QueryType extends ListEntitiesQueryType = ListEntitiesQueryType,
-  // IncludeType extends ObjectKeyType = string,
-  AdditionalParamsType extends AdditionalFields = AdditionalFields,
-  AdditionalResultType extends AdditionalFields = AdditionalFields,
+  IncludeType extends ObjectKeyType = string,
+  AdditionalParamsType extends AdditionalFields = any,
+  AdditionalResultType extends AdditionalFields = any
 
 > =
   {
     EntityType: EntityType,
     QueryType: QueryType, // {filters, sortBy, paginator}
-    // IncludeType: IncludeType, // Partial if not defined ?!
+    IncludeType: IncludeType, // Partial if not defined ?!
     AdditionalParamsType: AdditionalParamsType,
     AdditionalResultType: AdditionalResultType,
   }
@@ -70,10 +69,9 @@ export type FetchBullListEntitiesEndpointType<
 //  (Maybe add additional props `FetchBullListEntitiesAdditionalParamsType`)
 export type ConvertBullListEntitiesEndpointToBullParamsType<BullListEntitiesEndpointType extends FetchBullListEntitiesEndpointType = FetchBullListEntitiesEndpointType> =
   BullListEntitiesEndpointType['QueryType']
-  // (@@Search-IncludeType)
-  // & {
-  //   includes?: BullListEntitiesEndpointType['IncludeType'][]
-  // }
+  & {
+    includes?: BullListEntitiesEndpointType['IncludeType'][]
+  }
   & BullListEntitiesEndpointType['AdditionalParamsType'];
 
 
@@ -159,7 +157,7 @@ export const convertBullListEntitiesToBullProps = <BullListEntitiesEndpointType 
 
 // Convert to transform {data:{elements: EntityType, totalElements:number}} into {entities: EntityType, totalEntities:number}
 export const convertBullToBullListEntitiesReturn = <BullListEntitiesEndpointType extends FetchBullListEntitiesEndpointType = FetchBullListEntitiesEndpointType>(
-  { status, data: { entities, totalEntities, ...additionalData }, ...apiReturn }: FetchBullReturn<ConvertBullListEntitiesToBullEndpointType<BullListEntitiesEndpointType>>
+  { status, data: { entities, totalEntities, additionalData }, ...apiReturn }: FetchBullReturn<ConvertBullListEntitiesToBullEndpointType<BullListEntitiesEndpointType>>
 ): FetchBullListEntitiesReturn<BullListEntitiesEndpointType> => {
 
 
@@ -281,55 +279,56 @@ export type CreateBullListEntitiesEndpointType<BullListEntitiesEndpointType exte
 
 
 
-// type GroupSortByIdType = 'groupCode' | 'description'
-// type GroupFiltersType = {
-//   isPublic?: boolean,
-//   isArchived?: boolean,
-// }
-// type GroupType = {
-//   // groupId: number, // To be replaced by groupCode:
-//   groupCode: string,
-//   description: string,
-//   isPublic: boolean,
-//   isArchived: boolean,
-// }
+type GroupSortByIdType = 'groupCode' | 'description'
+type GroupFiltersType = {
+  isPublic?: boolean,
+  isArchived?: boolean,
+}
+export type GroupType = {
+  // groupId: number, // To be replaced by groupCode:
+  groupCode: string,
+  description: string,
+  isPublic: boolean,
+  isArchived: boolean,
+}
 
-// type ListGroupsEndpointType = FetchBullListEntitiesEndpointType<
-//   GroupType,
-//   ListEntitiesQueryType<GroupFiltersType, GroupSortByIdType>,
-//   { foo: string, bar?: string },
-//   { fooo: string, baaar: string }
-// >
+type ListGroupsEndpointType = FetchBullListEntitiesEndpointType<
+  GroupType,
+  ListEntitiesQueryType<GroupFiltersType, GroupSortByIdType>,
+  'permissions',
+  { foo: string, bar?: string },
+  { fooo: string, baaar: string }
+>
 
 
-// // const listGroups: CreateBullListEntitiesEndpointType<ListGroupsEndpointType> = async (params, props = {}) => {
-// //   return await fetchBullListEntities<ListGroupsEndpointType>({
-// //     service: 'permissions',
-// //     method: 'listGroups',
-// //     ...props,
-// //     // params,
-// //     params: { ...props.params, ...params },
-// //   })
-// // }
-// const listGroups: CreateBullListEntitiesEndpointType<ListGroupsEndpointType> = async (
-//   params, // params ici doit maintenant inclure explicitement les champs de AdditionalParamsType
-//   props = {}
-// ) => {
-//   // Ici, on assume que params inclut déjà tous les champs nécessaires,
-//   // y compris `foo`, en raison de la façon dont le type de `params` est défini.
+// const listGroups: CreateBullListEntitiesEndpointType<ListGroupsEndpointType> = async (params, props = {}) => {
 //   return await fetchBullListEntities<ListGroupsEndpointType>({
 //     service: 'permissions',
 //     method: 'listGroups',
 //     ...props,
-//     params: { ...props.params, ...params }, // `params` fourni par l'utilisateur doit déjà respecter le contrat de type
-//   });
+//     // params,
+//     params: { ...props.params, ...params },
+//   })
 // }
+const listGroups: CreateBullListEntitiesEndpointType<ListGroupsEndpointType> = async (
+  params, // params ici doit maintenant inclure explicitement les champs de AdditionalParamsType
+  props = {}
+) => {
+  // Ici, on assume que params inclut déjà tous les champs nécessaires,
+  // y compris `foo`, en raison de la façon dont le type de `params` est défini.
+  return await fetchBullListEntities<ListGroupsEndpointType>({
+    service: 'permissions',
+    method: 'listGroups',
+    ...props,
+    params: { ...props.params, ...params }, // `params` fourni par l'utilisateur doit déjà respecter le contrat de type
+  });
+}
 
 
-// // listGroups({ foo: 'Yes' })
-// // listGroups()
+// listGroups({ foo: 'Yes' })
+// listGroups()
 
-// // fetchBullListEntities<ListGroupsEndpointType>({
-// //   service: 'permissions',
-// //   method: 'listGroups',
-// // })
+// fetchBullListEntities<ListGroupsEndpointType>({
+//   service: 'permissions',
+//   method: 'listGroups',
+// })

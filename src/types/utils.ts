@@ -9,11 +9,17 @@ export type ObjectKeyType = string | number | symbol
 export type EnumType = { [key: string]: string } // Other type will cause issue: "number is not assignable to string" when using t(Enum.Foo)
 export type EnumValueType<E> = E[keyof E]
 
-// What the best type for AdditionalFields ?
-//  {}              -> Force to be an object, but can also be function, array, function
-//  object          -> Force to be an object and not other primitive
-//  GeneralObject   -> Global record that allow everything (not type-safe)
+
 export type GeneralObject<Key extends ObjectKeyType = string, Value = any> = Record<Key, Value>;
+
+
+// Allow to extend an object with possible Additional fields (extends AdditionalFields)
+//    Usage of `extends any, null, unknow or {}` will cause issue when combined with something else
+//    See FetchBullEntity or FetchBullEntitiesList for example of use
+//      => If we replace AdditionalFields on a `FetchBullEntityEndpointType` definition and create an Endpoint without any defined `AdditionalResultType`
+//          then res.data will be `any` as `EntityType & any` != EntityType (but any)
+//          where `EntityType & AdditionalFields => EntityType`
+export type AdditionalFields = GeneralObject;
 
 
 //
@@ -29,10 +35,30 @@ export type DeepPartial<T> = T extends object ? {
   [P in keyof T]?: DeepPartial<T[P]>;
 } : T;
 
+
 // Allow to make a Optional fields under fiew level. Example `DeepOptional<Foo, 'path.to.field'>`
-export type DeepOptional<T, Path extends string> = Path extends `${infer First}.${infer Rest}`
-  ? { [K in keyof T as K extends First ? K : never]?: DeepOptional<T[K], Rest> } & Omit<T, First>
-  : { [K in keyof T as K extends Path ? K : never]?: T[K] } & Omit<T, Path>;
+
+// This version also put optional all part of the Path (if path is `foo.bar.xyz` then foo, foo.bar and foo.bar.xyz become optional)
+// export type DeepOptional<T, Path extends string> = Path extends `${infer First}.${infer Rest}`
+//   ? { [K in keyof T as K extends First ? K : never]?: DeepOptional<T[K], Rest> } & Omit<T, First>
+//   : { [K in keyof T as K extends Path ? K : never]?: T[K] } & Omit<T, Path>;
+
+// Usage:
+// type MyType = { foo: { bar: string, xyz: string } }
+// type MyTypePartialBar = DeepOptional<MyType, 'foo.bar'>
+export type DeepOptional<T, Path extends string> = string extends Path
+  ? T
+  : (Path extends keyof T
+    ? Omit<T, Path> & Partial<Pick<T, Path & keyof T>>
+    : (Path extends `${infer First}.${infer Rest}`
+      ? (First extends keyof T
+        ? { [K in keyof T]: K extends First ? DeepOptional<T[K], Rest> : T[K] }
+        : T
+      )
+      : T
+    )
+  );
+
 
 
 // Allow to put a list of Required fields
@@ -51,35 +77,40 @@ export type Nullable<T, Fields extends keyof T = keyof T> = {
 export type PartialNullable<T, Fields extends keyof T = keyof T> = Partial<Nullable<T, Fields>>;
 
 
-
-// --- Tools to IsNeverOrEmptyOrAllOptional ----
-
-// Identifies keys of T that are optional.
-export type AllOptionalKeys<T> = {
-  // Maps each key of T to itself if its value is optional (can be assigned undefined), otherwise maps to never.
-  [K in keyof T]-?: undefined extends T[K] ? K : never
-}[keyof T];
-
-// Checks if a type has no keys, meaning it's an empty object.
-export type IsEmptyObject<T> = keyof T extends never ? true : false;
-
-// Determines if a type is never, undefined, or null.
-export type IsNeverOrEmpty<T> = [T] extends [never] | [undefined] | [null] ? true : false;
-
-// Determines if T is an object with only optional fields.
-export type IsObjectWithOnlyOptionalFields<T> = [T] extends [object]
-  // First, checks if T is an object. If true, it then checks if the object with all non-optional keys removed is empty.
-  ? IsEmptyObject<Pick<T, Exclude<keyof T, AllOptionalKeys<T>>>>
-  : false;
-
-// Extends IsNeverOrEmpty to also return true if T is an object with only optional fields.
-export type IsNeverOrEmptyOrAllOptional<T> =
-  IsNeverOrEmpty<T> extends true ? true :
-  // If T is not never, undefined, or null, it then checks if T is an object with only optional fields.
-  IsObjectWithOnlyOptionalFields<T> extends true ? true :
-  false;
+export type IsOptional<T> = T extends {} ? (keyof T extends never ? true : false) : true;
 
 
+// Utility type that checks if two types X and Y are identical.
+export type IsEquals<X, Y> =
+  (<T>() => T extends X ? 1 : 2) extends
+  (<T>() => T extends Y ? 1 : 2) ? true : false;
+
+// Determines if all properties of type T are optional. It iterates over each property key K of T,
+// and uses the IfEquals utility to check if making the property K optional in a new type would
+// result in the same type as T. If all properties are optional, it results in true, otherwise false.
+export type AllPropertiesOptional<T> = {
+  [K in keyof T]-?: IsEquals<{ [Q in K]: T[K] }, { [Q in K]?: T[K] }> extends true ? never : K
+}[keyof T] extends never ? true : false;
+
+
+export type IsEmpty<T> = [T] extends [undefined] | [null] | [never] ? true : false
+
+
+// Type that checks if a type T is either undefined, null, never, or an object with all optional properties.
+// This is useful for determining if a parameter type effectively doesn't require a value to be provided,
+// because it's either a type that represents "no value" or an object where all properties are optional.
+export type IsEmptyOrAllOptional<T> =
+  // First, checks if T is one of the "empty" types: undefined, null, or never.
+  IsEmpty<T> extends true
+  ? true
+  : (
+    // Then, checks if T is an object type with all properties being optional.
+    T extends object
+    ? (AllPropertiesOptional<T> extends true ? true : false)
+    :
+    // For all other types, returns false, indicating that they are not considered "empty" or fully optional.
+    false
+  )
 
 
 

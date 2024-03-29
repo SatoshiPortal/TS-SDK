@@ -1,3 +1,8 @@
+
+
+import { GeneralObject, IsEmptyOrAllOptional, Optional } from "../types";
+import { FetchApiEndpointType, FetchApiProps, FetchApiReturn, fetchApi } from ".";
+
 //
 // Fetch RPC API
 // =============
@@ -5,13 +10,12 @@
 // Wrapper around fetchApi to make it works easier with RPC calls
 //
 
-import { FetchApiEndpointType, FetchApiProps, FetchApiReturn, GeneralObject, IsEmptyOrAllOptional, fetchApi } from "..";
-
 
 // -------------------- Types --------------------
 
 export type FetchRpcParamsType = GeneralObject | null; // Alias FetchApiDataReqType
 export type FetchRpcResultType = any // Alias FetchApiDataResType; (any)
+
 
 
 // FetchRpc Endpoint Type
@@ -21,22 +25,16 @@ export type FetchRpcResultType = any // Alias FetchApiDataResType; (any)
 //  * `req.body.data.params`
 //  * `res.data.result`
 
-//
-// {@@SEARCH-IsParamsOptional}
-//  @@NOTE: To avoid over complexity, for now fetchRpc always have optional params type.
-//  @@TODO: See (later) if we can handle it better,
-//          BUT the more important is `getBull__()` so for now don't care about it
-//
-
 export type FetchRpcEndpointType<
   ParamsType extends FetchRpcParamsType = any,
   ResultType extends FetchRpcResultType = any,
-// IsParamsOptional extends boolean = boolean
+  IsParamsOptional extends boolean = boolean
 > = {
   ParamsType: ParamsType,
   ResultType: ResultType,
-  // IsParamsOptional: IsParamsOptional //  We tried with `IsEmptyOrAllOptional<RpcEndpointType['ParamsType']> extends true` but look like it's not working fine with AdditionalParamsType ..
+  IsParamsOptional: IsParamsOptional //  We tried with `IsEmptyOrAllOptional<RpcEndpointType['ParamsType']> extends true` but look like it's not working fine with AdditionalParamsType ..
 }
+
 
 
 // Convert RPC to API
@@ -47,29 +45,17 @@ export type FetchRpcEndpointType<
 // Make possible to reuse type defined for fetchRPC with fetchAapi
 
 
-// As fetchApi point of view, what's contained inside DataReq when we do a fetchRpc call ?
+// When fetchRpc receive props, who to convert then in order to use it with fetchApi
 export type ConvertRpcEndpointToApiDataReqType<RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType> = {
   id?: number;
   jsonrpc?: string; // 2.0
   method?: string; // RPC endpoint
-
-  // @@NOTE: Easy version where fetchRpc.params is always optional. (@@SEARCH-IsParamsOptional)
-  // params?: RpcEndpointType['ParamsType'];
-  // @@FIX: Allow to receive `| {}` in case fetchBull require no params
-  // params?: RpcEndpointType['ParamsType'] | {};
 }
-
-  // @@TODO (@@SEARCH-IsParamsOptional)
-  // ------
-  //    Replace optional params by that.
 
   // If RpcParamsType is specify => params is mandatory, if not params is optional
   // (IsNeverOrEmpty<ParamsType> extends true
   // (IsEmptyOrAllOptional<RpcEndpointType['ParamsType']> extends true
-  // & (RpcEndpointType['IsParamsOptional'] extends true
-
-  // & (null extends RpcEndpointType['ParamsType'] // extends null
-  & (true extends IsEmptyOrAllOptional<RpcEndpointType['ParamsType']> // extends null
+  & (RpcEndpointType['IsParamsOptional'] extends true
     ? {
       params?: RpcEndpointType['ParamsType']; // RPC params devient optionnel
     }
@@ -78,8 +64,8 @@ export type ConvertRpcEndpointToApiDataReqType<RpcEndpointType extends FetchRpcE
     }
   ) | null;
 
-
-// As fetchApi point of view, what's returned inside DataRes ?
+// When fetchApi will receive a result made for fetchRpc:
+//    api.data will be ApiDataRes: {id, jsonrpc, result: ResultType}
 export type ConvertRpcEndpointToApiDataResType<RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType> = {
   id?: number
   jsonrpc?: string      // 2.0
@@ -93,14 +79,9 @@ export type ConvertRpcToApiEndpointType<RpcEndpointType extends FetchRpcEndpoint
   >
 
 
-
 // FetchRpc Props/Return Type
 // --------------------------
 // What props await fetchRpc and that's returned by fetchRpc
-
-
-// We want as fetchRpc props to be: { id = 1, method, params, ...props }
-//   where {id, method, params} are fetchApi's data
 
 export type FetchRpcProps<RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType> =
   // Any FetchApi default props (without {id, method, params}) we want at the root level of function props
@@ -118,7 +99,6 @@ export type FetchRpcReturn<RpcEndpointType extends FetchRpcEndpointType = FetchR
   >, 'data'> & {
     data: RpcEndpointType['ResultType'] // Rpc res.data is ResultType (instead of res.data.result)
   }
-
 
 
 // Convert Props/Return Function
@@ -162,6 +142,8 @@ export const convertApiToRpcReturn = <RpcEndpointType extends FetchRpcEndpointTy
   data: apiReturn.data.result,
 });
 
+
+
 // FetchRpc Function
 // -----------------
 // Propose a function to direclty call an API using a Rpc
@@ -183,3 +165,132 @@ export async function fetchRpc<RpcEndpointType extends FetchRpcEndpointType = Fe
   // We receive an ApiReturn and want to transform it as a RpcReturn
   return convertApiToRpcReturn(res);
 }
+
+
+
+
+/*
+// -------------------- Types --------------------
+
+export type FetchRpcParamsType = GeneralObject | null;
+
+
+
+// FetchRpc Data Type
+// ------------------
+
+// Transform a RPC Params Type (fetch body.params) into an API Data Request (fetch body)
+export type TransformRpcParamsToApiDataReqType<RpcParamsType extends FetchRpcParamsType = any> =
+  // If RpcParamsType is specify params is mandatory, if not params is optional
+  (IsNeverOrEmpty<RpcParamsType> extends true
+    ? {
+      id?: number;
+      jsonrpc?: string; // 2.0
+      method?: string; // RPC endpoint
+      params?: RpcParamsType; // RPC params devient optionnel
+    }
+    : {
+      id?: number;
+      jsonrpc?: string; // 2.0
+      method?: string; // RPC endpoint
+      params: RpcParamsType; // RPC params est obligatoire
+    }
+  ) | null;
+
+// Transform a RPC Result Type into an API Data Response
+export type TransformRpcResultToApiDataResType<ResultResType = any> = {
+  id?: number
+  jsonrpc?: string        // 2.0
+  result?: ResultResType  // RPC result
+} | null
+
+
+
+
+// FetchRpc Endpoint Type
+// ----------------------
+// Allow to handle Request and Return type in a single TS Type
+
+export type FetchRpcEndpointType<ParamsReqType extends FetchRpcParamsType = any, ResultResType = any> = {
+  ParamsReqType: ParamsReqType
+  ResultResType: ResultResType
+}
+
+// Transform an RpcEndpointType to ApiEndpointType
+//    we receive the RPC params type as request, and RPC result type avec return value
+//    and we want to the be trasnformed as a API DataReq and API DataRes (to be usable with fetchApi - and FetchApi types)
+//
+// * (rpc) ParamsReqType => (api) DataReqType
+// * (rpc) ResultResType => (api) DataResType
+export type TransformRpcToApiEndpointType<RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType> = FetchApiEndpointType<
+  TransformRpcParamsToApiDataReqType<RpcEndpointType['ParamsReqType']>, // DataReqType
+  TransformRpcResultToApiDataResType<RpcEndpointType['ResultResType']>  // DataResType
+>
+
+
+
+// FetchRpc Props/Return
+// ---------------------
+// What's type the fetchRpc wait as props and will return
+
+export type FetchRpcProps<RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType> = FetchApiProps<Omit<TransformRpcToApiEndpointType<RpcEndpointType>, 'params' | 'id' | 'method'>> & TransformRpcParamsToApiDataReqType<RpcEndpointType['ParamsReqType']>
+
+export type FetchRpcReturn<RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType> =
+  Omit<FetchApiReturn<TransformRpcToApiEndpointType<RpcEndpointType>>, 'data'>
+  & {
+    data: RpcEndpointType['ResultResType']
+  }
+
+// RpcProps to ApiProps
+// --------------------
+//  Transform RPC Props to Api Props
+//    So a function/component who use fetchApi can be used with fetchRcp props
+
+
+export const transformRpcToApiProps = <RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType>({ id = 1, method, params, ...props }: FetchRpcProps<RpcEndpointType>): FetchApiProps<TransformRpcToApiEndpointType<RpcEndpointType>> => {
+  return {
+    // By default all RPC request are POST
+    requestMethod: 'post',
+
+    // Allow to override fetchApi props
+    ...props,
+
+    // data (future strigified fetch.body)
+    data: {
+      jsonrpc: "2.0",
+      ...(props.data || {}),
+      id,
+      method,
+      ...(params ? { params } : {}),
+    }
+  };
+};
+
+
+// ApiResult to RpcResult
+// ----------------------
+//  Transform an Api Result into an Rpc Result
+
+export const transformApiToRpcResult = <RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType>(apiReturn: FetchApiReturn<TransformRpcToApiEndpointType<RpcEndpointType>>): FetchRpcReturn<RpcEndpointType> => {
+  return {
+    ...apiReturn,
+
+    // RpcReturn.data is ApiReturn.data.result to make easiest to use
+    data: apiReturn.data?.result || {},
+  }
+};
+
+// FetchRpc Function
+// -----------------
+// Propose a function to direclty call an API using a Rpc
+
+export async function fetchRpc<RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType>(rpcProps: FetchRpcProps<RpcEndpointType>): Promise<FetchRpcReturn<RpcEndpointType>> {
+
+  const res = await fetchApi(transformRpcToApiProps(rpcProps));
+
+
+  // We receive an ApiReturn and want to transform it as a RpcReturn
+  return transformApiToRpcResult(res);
+}
+
+*/

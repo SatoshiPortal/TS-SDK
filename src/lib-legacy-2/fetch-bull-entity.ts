@@ -7,7 +7,7 @@
 // Wrapper around fetchBull to make special call to retrieve Element
 //
 
-import { AdditionalFields, EntityOf, GeneralObject, IsEmpty, IsEmptyOrAllOptional, IsEquals, ObjectKeyType, } from "../types";
+import { AdditionalFields, EntityOf, GeneralObject, ObjectKeyType, } from "../types";
 import { FetchBullEndpointType, FetchBullProps, FetchBullReturn, fetchBull } from '.'
 
 // -------------------- (Legacy) Types --------------------
@@ -46,18 +46,16 @@ export type FetchBullEntityParamsType = GeneralObject | null; // Alias FetchBull
 export type FetchBullEntityEndpointType<
   EntityType = any,
   ParamsType extends FetchBullEntityParamsType = any,
-  // IncludeType extends ObjectKeyType = string,
-  AdditionalResultType extends AdditionalFields = AdditionalFields,
+  IncludeType extends ObjectKeyType = string,
+  AdditionalResultType extends AdditionalFields = any,
+  IsParamsOptional extends boolean = boolean
 > =
   {
     ParamsType: ParamsType,
+    IncludeType: IncludeType,
     EntityType: EntityType,
     AdditionalResultType: AdditionalResultType,
-
-    // @@Search-IncludeType
-    //  To simplify params direclty implement `include` inside `ParamsType`
-    //   because in TS `null & {}` => `null` and not `{}` it's difficult to handle request params if one or the other is `null`
-    // IncludeType: IncludeType,
+    IsParamsOptional: IsParamsOptional
   }
 
 
@@ -74,25 +72,15 @@ export type FetchBullEntityEndpointType<
 
 // Alias (no conversion needed) -
 //  BullEntity Params do not need to be updated to be used as Bull Params
-
-// To simply, avoid this comlexity and implement `includes` directly inside `params`
-//    (see @@Search-IncludeType)
-// null & {} return null.. So transform Params to {} if we have no params
-// (true extends IsEmpty<BullEntityEndpointType['ParamsType']>
-//   ? IsEquals<BullEntityEndpointType['IncludeType'], string> extends true ? null : {}
-//   : BullEntityEndpointType['ParamsType']
-// )
-// & {
-//   includes?: BullEntityEndpointType['IncludeType'][]
-// }
-
 export type ConvertBullEntityEndpointToBullParamsType<BullEntityEndpointType extends FetchBullEntityEndpointType = FetchBullEntityEndpointType> =
   BullEntityEndpointType['ParamsType']
-
+  & {
+    includes?: BullEntityEndpointType['IncludeType'][]
+  }
 
 
 // Alias (no conversion needed)
-//    Bull result do not need to be updated to be used {as BullEntity result (only the `BullEntityReturn` is updated to add {entity} on the root of the return)
+//    Bull result do not need to be updated to be used as BullEntity result (only the `BullEntityReturn` is updated to add {entity} on the root of the return)
 export type ConvertBullEntityEndpointToBullResultType<BullEntityEndpointType extends FetchBullEntityEndpointType = FetchBullEntityEndpointType> =
   ElementOf<BullEntityEndpointType['EntityType']>
   & BullEntityEndpointType['AdditionalResultType'];
@@ -102,7 +90,8 @@ export type ConvertBullEntityEndpointToBullResultType<BullEntityEndpointType ext
 export type ConvertBullEntityToBullEndpointType<BullEntityEndpointType extends FetchBullEntityEndpointType = FetchBullEntityEndpointType> =
   FetchBullEndpointType<
     ConvertBullEntityEndpointToBullParamsType<BullEntityEndpointType>,
-    ConvertBullEntityEndpointToBullResultType<BullEntityEndpointType>
+    ConvertBullEntityEndpointToBullResultType<BullEntityEndpointType>,
+    BullEntityEndpointType['IsParamsOptional']
   >
 
 
@@ -214,25 +203,86 @@ export async function fetchBullEntity<BullEntityEndpointType extends FetchBullEn
 // ------------------------
 // Helper to generate easy to use typed function
 //    where only params are requested
-// @@TODO: Create as version without params (only props) in case params is null
 
 //
 // Define the type
 //
 //
-export type CreateBullEntityEndpointType<BullEntityEndpointType extends FetchBullEntityEndpointType = FetchBullEntityEndpointType> =
-  IsEmptyOrAllOptional<FetchBullEntityProps<BullEntityEndpointType>['params']> extends true
-  ?
-  (
-    // First function props is optional {params} (null | all ptional fields object)
-    params?: FetchBullEntityProps<BullEntityEndpointType>['params'],
-    // Allow to send every fetch rpc props
-    props?: Partial<FetchBullEntityProps<BullEntityEndpointType>>
-  ) => Promise<FetchBullEntityReturn<BullEntityEndpointType>>
-  : (
-    // First function props is mandatory {params}
-    params: FetchBullEntityProps<BullEntityEndpointType>['params'],
-    // Allow to send every fetch rpc props
-    props?: Partial<FetchBullEntityProps<BullEntityEndpointType>>
-  ) => Promise<FetchBullEntityReturn<BullEntityEndpointType>>
+// Version without props {service, method} to create helper for every endpoint
+export type CreateBullEntityEndpointType<BullEntityEndpointType extends FetchBullEntityEndpointType = FetchBullEntityEndpointType> = (
+  // First function props is only {params}
+  params: FetchBullEntityProps<BullEntityEndpointType>['params'],
+  // Allow to send every fetch rpc props
+  props?: Partial<FetchBullEntityProps<BullEntityEndpointType>>
+) => Promise<FetchBullEntityReturn<BullEntityEndpointType>>
 
+
+// Usage:
+// ------
+// type GetGroupEndpointType = FetchBullEndpointType<
+//   GroupType,
+//   { groupCode: string },
+//   'permissions' | 'foo' | 'bar'
+// >
+// const getGroup: CreateBullEntityEndpointType<GetGroupEndpointType> = async (params, props = {}) => {
+//   return await fetchBull({
+//     service: 'permissions',
+//     method: 'getGroup',
+//     ...props,
+//     params: { ...props.params, ...params, },
+//   })
+// }
+
+
+type GroupType = {
+  // groupId: number, // To be replaced by groupCode:
+  groupCode: string,
+  description: string,
+  isPublic: boolean,
+  isArchived: boolean,
+}
+
+type GetGroupEndpointType = FetchBullEntityEndpointType<
+  GroupType,
+  { groupCode: string },
+  'permissions',
+  { foo: GroupType }
+>
+
+const getGroup: CreateBullEntityEndpointType<GetGroupEndpointType> = async (params, props = {}) => {
+  return await fetchBullEntity({
+    service: 'permissions',
+    method: 'getGroup',
+    ...props,
+    params: { ...props.params, ...params, },
+  })
+}
+
+const fn = async () => {
+  const res = await getGroup({
+    groupCode: 'Foo'
+  })
+}
+
+// ------------ OPTIONAL PARAMS
+
+// type GetGroupOptionalParamsEndpointType = FetchBullEntityEndpointType<
+//   GroupType,
+//   null,
+//   'permissions',
+//   { foo: GroupType },
+//   false
+// >
+
+// const getGroupOptionalParams: CreateBullEntityEndpointType<GetGroupOptionalParamsEndpointType> = async (params, props = {}) => {
+//   return await fetchBullEntity({
+//     service: 'permissions',
+//     method: 'getGroup',
+//     ...props,
+//     params: { ...(props.params ? props.params : {}), ...(params || {}), },
+//   })
+// }
+
+// const fnOPtionalParams = async () => {
+//   const res = await getGroupOptionalParams()
+// }

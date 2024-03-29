@@ -1,4 +1,5 @@
 
+
 //
 // Fetch BullBitcoin API
 // =====================
@@ -6,7 +7,7 @@
 // Wrapper around fetchRpc to make call to BullBitcoin API
 //
 
-import { DeepOptional, GeneralObject, IsEmptyOrAllOptional, Optional } from "../types";
+import { GeneralObject, Optional } from "../types";
 import { FetchRpcEndpointType, FetchRpcProps, FetchRpcReturn, fetchRpc } from '.'
 
 // -------------------- Types --------------------
@@ -20,7 +21,7 @@ export type FetchBullResultType = any // Alias FetchRpcResultType; (any)
 
 
 // FetchBull Endpoint Type
-// -----------------------
+// ----------------------
 
 // BullEndpoint are defined the same way as RpcEndpoint
 //    (by setuping req:{params: ParamsType} and res: {result: ResultType})
@@ -28,37 +29,48 @@ export type FetchBullResultType = any // Alias FetchRpcResultType; (any)
 export type FetchBullEndpointType<
   ParamsType extends FetchBullParamsType = any,
   ResultType extends FetchBullResultType = any,
-
-// See {@@SEARCH-IsParamsOptional}
-// IsParamsOptional extends boolean = boolean
+  IsParamsOptional extends boolean = boolean
 > =
   // alias
-  // { ParamsType: ParamsType, ResultType: ResultType }
-  FetchRpcEndpointType<ParamsType, ResultType>
-
-
+  FetchRpcEndpointType<ParamsType, ResultType, IsParamsOptional>
+// {
+//   ParamsType: ParamsType,
+//   ResultType: ResultType,
+// }
 
 
 // Convert Bull to RPC
 // -------------------
+// How to use fetchRpc with Bull type definition
+//
+// Convert bull endpoint (params,result) as Rpc endpoint (params,result)
+// Make possible to re-use type defined for fetchBull with fetchRpc (or even fetchApi by converting again from Rpc to Api)
+
+//
+//
+// @QUESTION: Remove Convert function here ?!
+//      Useless - But keep them help to construct functions to keep always the same patern
+//        Api => Rpc / Rpc => Bull / Bull => Entity ...
+//
+//
+
 // Alias (no conversion needed) -
-//  Bull Params and Result do not need to be updated to be used as Rpc
-//    (only the function props are updated with default values)
-
-
+//  Bull Params do not need to be updated to be used as Rpc Params (only the function props are updated)
 export type ConvertBullEndpointToRpcParamsType<BullEndpointType extends FetchBullEndpointType = FetchBullEndpointType> = BullEndpointType['ParamsType'];
 
 // Alias (no conversion needed)
 //    Rpc result do not need to be updated to be used as Bull result
 export type ConvertBullEndpointToRpcResultType<BullEndpointType extends FetchBullEndpointType = FetchBullEndpointType> = BullEndpointType['ResultType'];
 
+
+// Alias (no conversion needed)
+//    Both Params and Result do not need conversion between Bull and RPC
 export type ConvertBullToRpcEndpointType<BullEndpointType extends FetchBullEndpointType = FetchBullEndpointType> =
   FetchRpcEndpointType<
     ConvertBullEndpointToRpcParamsType<BullEndpointType>,  // => RPC.ParamsType
-    ConvertBullEndpointToRpcResultType<BullEndpointType>   // => RPC.ResultType
-  // BullEndpointType['IsParamsOptional']  // (See {@@SEARCH-IsParamsOptional})
+    ConvertBullEndpointToRpcResultType<BullEndpointType>,  // => RPC.ResultType
+    BullEndpointType['IsParamsOptional']
   >
-
 
 
 // FetchBull Props/Return Type
@@ -66,22 +78,20 @@ export type ConvertBullToRpcEndpointType<BullEndpointType extends FetchBullEndpo
 // What props await fetchBull and that's returned by fetchBull
 
 export type FetchBullProps<BullEndpointType extends FetchBullEndpointType = FetchBullEndpointType> =
-  // Same props as RPC props but `url` is optional
   Optional<
+    // (Alias - no need but keep it in case of future update ?)
+    //  FetchRpcProps<BullEndpointType> === FetchRpcProps<ConvertRpcToApiEndpointType<BullEndpointType>>
     FetchRpcProps<ConvertBullToRpcEndpointType<BullEndpointType>>
-    , 'url'> // {url} is Optional
 
-  //  Add {service} helper on fetchBull props
+    , 'url'> // {url} is Optional
+  //  Add only {service} on fetchBull props
   & {
     service: string
   }
 
-// Alias
-//    No conversion needed, we could use FetchRpcReturn
-//    but in case of future updates keep converting
+// Alias (FetchRpcReturn - but keep it in case of future update ?)
 export type FetchBullReturn<BullEndpointType extends FetchBullEndpointType = FetchBullEndpointType> =
   FetchRpcReturn<ConvertBullToRpcEndpointType<BullEndpointType>>
-
 
 
 
@@ -96,9 +106,9 @@ export const convertBullToRpcProps = <BullEndpointType extends FetchBullEndpoint
   service,
 
   ...props
-}: FetchBullProps<BullEndpointType>): FetchRpcProps<ConvertBullToRpcEndpointType<BullEndpointType>> => {
+}: FetchBullProps<BullEndpointType>): FetchRpcProps<BullEndpointType> => {
 
-  // @@TODO: Update this to allow setupBullApi
+  // @TODO: Update this to allow setupBullApi
   //    to helpthe project to setup global Bull Api Settings
   //    and direclty inject/update rpc props:
   //
@@ -120,7 +130,7 @@ export const convertBullToRpcProps = <BullEndpointType extends FetchBullEndpoint
     // 2 solutions:
     // ------------
     // params: props.params || {},
-    params: props.params// as FetchRpcProps<BullEndpointType>['params']
+    params: props.params as FetchRpcProps<BullEndpointType>['params']
   } //as FetchRpcProps<BullEndpointType>
 };
 
@@ -129,9 +139,6 @@ export const convertBullToRpcProps = <BullEndpointType extends FetchBullEndpoint
 export const convertRpcToBullReturn = <BullEndpointType extends FetchBullEndpointType = FetchBullEndpointType>(
   apiReturn: FetchRpcReturn<ConvertBullToRpcEndpointType<BullEndpointType>>
 ): FetchBullReturn<BullEndpointType> => apiReturn;
-
-
-
 
 
 
@@ -159,30 +166,35 @@ export async function fetchBull<BullEndpointType extends FetchBullEndpointType =
 }
 
 
-
-
 // CreateBullEndpoint
 // ------------------
 // Helper to generate easy to use typed function
 //    where only params are requested
-// @@TODO: Create as version without params (only props) in case params is null
-
 
 //
 // Define the type
 //
+//
+// Version without props {service, method} to create helper for every endpoint
+export type CreateBullEndpointType<BullEndpointType extends FetchBullEndpointType = FetchBullEndpointType> = (
+  // First function props is only {params}
+  params: FetchBullProps<BullEndpointType>['params'],
+  // Allow to send every fetch rpc props
+  props?: Partial<FetchBullProps<BullEndpointType>>
+) => Promise<FetchBullReturn<BullEndpointType>>
 
-export type CreateBullEndpointType<BullEndpointType extends FetchBullEndpointType = FetchBullEndpointType> =
-  // null extends FetchBullProps<BullEndpointType>['params']
-  true extends IsEmptyOrAllOptional<FetchBullProps<BullEndpointType>['params']>
-  ? (
-    // Make params optional if it can be null
-    params?: FetchBullProps<BullEndpointType>['params'] /*| GeneralObject*/, // Allow to send {} as props instead of null ?
-    props?: Partial<FetchBullProps<BullEndpointType>>
-  ) => Promise<FetchBullReturn<BullEndpointType>>
-  : (
-    // Require params if it cannot be null
-    params: FetchBullProps<BullEndpointType>['params'] /* & GeneralObject */, // Allow to add additional props ?
-    props?: Partial<FetchBullProps<BullEndpointType>>
-  ) => Promise<FetchBullReturn<BullEndpointType>>;
 
+// Usage:
+// ------
+// type GetGroupEndpointType = FetchBullEndpointType<
+//   { groupCode: string },
+//   { element: GroupType }
+// >
+// const getGroup: CreateBullEndpointType<GetGroupEndpointType> = async (params, props = {}) => {
+//   return await fetchBull({
+//     service: 'permissions',
+//     method: 'getGroup',
+//     ...props,
+//     params: { ...props.params, ...params, },
+//   })
+// }

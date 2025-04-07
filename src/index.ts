@@ -1,7 +1,4 @@
 
-// Tools
-export * from "./lib";
-export * from "./types";
-
-// API SDK
-export * from "./sdk";
+export function hello(name: string): string {
+  return `Hello, ${name} from TS-SDK!`;
+}

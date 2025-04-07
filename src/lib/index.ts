@@ -1,6 +1,15 @@
-export * from './fetch-api';
-export * from './fetch-rpc';
+/*
+export * from './fetchApi';
+export * from './fetchRpc';
 
-export * from './fetch-bull';
-export * from './fetch-bull-entity';
-export * from './fetch-bull-list-entities';
+export * from './fetchBull';
+export * from './fetchBullEntity';
+export * from './fetchBullEntityList';
+
+*/
+
+
+
+export function hello(name: string): string {
+  return `Hello, ${name} from TS-SDK!`;
+}

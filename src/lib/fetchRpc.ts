@@ -5,6 +5,7 @@
 // Wrapper around fetchApi to make it works easier with RPC calls
 //
 
+import { uuid } from "uuidv4";
 import { FetchApiEndpointType, FetchApiProps, FetchApiReturn, GeneralObject, IsEmptyOrAllOptional, fetchApi } from "..";
 
 
@@ -49,7 +50,7 @@ export type FetchRpcEndpointType<
 
 // As fetchApi point of view, what's contained inside DataReq when we do a fetchRpc call ?
 export type ConvertRpcEndpointToApiDataReqType<RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType> = {
-  id?: number;
+  id?: number | string;
   jsonrpc?: string; // 2.0
   method?: string; // RPC endpoint
 
@@ -81,7 +82,7 @@ export type ConvertRpcEndpointToApiDataReqType<RpcEndpointType extends FetchRpcE
 
 // As fetchApi point of view, what's returned inside DataRes ?
 export type ConvertRpcEndpointToApiDataResType<RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType> = {
-  id?: number
+  id?: number | string
   jsonrpc?: string      // 2.0
   result?: RpcEndpointType['ResultType']   // RPC result
 } | null
@@ -128,7 +129,7 @@ export type FetchRpcReturn<RpcEndpointType extends FetchRpcEndpointType = FetchR
 
 
 export const convertRpcToApiProps = <RpcEndpointType extends FetchRpcEndpointType = FetchRpcEndpointType>(
-  { id = 1, method, params, ...props }: FetchRpcProps<RpcEndpointType>
+  { id = uuid(), method, params, ...props }: FetchRpcProps<RpcEndpointType>
 ): FetchApiProps<ConvertRpcToApiEndpointType<RpcEndpointType>> => {
 
   return {

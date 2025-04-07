@@ -104,7 +104,7 @@ export type FetchApiReturn<ApiEndpointType extends FetchApiEndpointType = FetchA
     req?: FetchApiProps<ApiEndpointType> & {
       url?: string, // URL cannot be sent from Server Component to Client Component, so better to send string (and URL it Client Side if needed)
     },
-    // Solution to fix ListEntities result error where {params} is required because QueryList is specified, but should not
+    // Solution to fix EntityList result error where {params} is required because QueryList is specified, but should not
     // req?: DeepPartial<FetchApiProps<ApiEndpointType> & {
     //   url?: string, // URL cannot be sent from Server Component to Client Component, so better to send string (and URL it Client Side if needed)
     // }>,

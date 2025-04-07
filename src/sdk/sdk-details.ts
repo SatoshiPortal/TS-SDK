@@ -36,7 +36,7 @@ export const getLastPackageVersion = async (packageName: string): Promise<{ last
 
   return {
     lastVersion,
-    lastUpdate: data.time[lastVersion]
+    lastUpdate
   }
 }
 
